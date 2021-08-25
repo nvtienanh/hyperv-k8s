@@ -3,14 +3,14 @@ $workdir = "$HOME\Documents"
 # $guestuser = $env:USERNAME.ToLower()
 $guestuser = 'administrator'
 $sshpath = "$HOME\.ssh\id_rsa.pub"
-if (!(test-path $sshpath)) {
-  write-host "`n please configure `$sshpath or place a pubkey at $sshpath `n"
+if (!(Test-Path $sshpath)) {
+  Write-Host "`n please configure `$sshpath or place a pubkey at $sshpath `n"
   exit
 }
-$sshpub = $(get-content $sshpath -raw).trim()
+$sshpub = $(Get-Content $sshpath -raw).trim()
 
-$config = $(get-content -path .\.distro -ea silentlycontinue | out-string).trim()
-if(!$config) {
+$config = $(Get-Content -path .\.distro -ea silentlycontinue | Out-String).trim()
+if (!$config) {
   $config = 'focal'
 }
 
@@ -18,7 +18,7 @@ switch ($config) {
   'bionic' {
     $distro = 'ubuntu'
     $generation = 2
-    $imgvers="18.04"
+    $imgvers = "18.04"
     $imagebase = "https://cloud-images.ubuntu.com/releases/server/$imgvers/release"
     $sha256file = 'SHA256SUMS'
     $image = "ubuntu-$imgvers-server-cloudimg-amd64.img"
@@ -27,7 +27,7 @@ switch ($config) {
   'focal' {
     $distro = 'ubuntu'
     $generation = 2
-    $imgvers="20.04"
+    $imgvers = "20.04"
     $imagebase = "https://cloud-images.ubuntu.com/releases/server/$imgvers/release"
     $sha256file = 'SHA256SUMS'
     $image = "ubuntu-$imgvers-server-cloudimg-amd64.img"
@@ -36,8 +36,8 @@ switch ($config) {
 }
 
 $nettype = 'private' # private/public
-$zwitch = 'k8s' # private or public switch name
-$natnet = 'kubenatnet' # private net nat net name (privnet only)
+$zwitch = 'K8s' # private or public switch name
+$natnet = 'KubeNatNet' # private net nat net name (privnet only)
 $adapter = 'Wi-Fi' # public net adapter name (pubnet only)
 
 $cpus = 2
@@ -96,8 +96,6 @@ $sshopts = @('-o LogLevel=ERROR', '-o StrictHostKeyChecking=no', '-o UserKnownHo
 
 $dockercli = 'https://github.com/StefanScherer/docker-cli-builder/releases/download/20.10.5/docker.exe'
 
-$helmurl = 'https://get.helm.sh/helm-v3.1.2-windows-amd64.zip'
-
 # ----------------------------------------------------------------------
 
 $imageurl = "$imagebase/$image$archive"
@@ -106,23 +104,24 @@ $vhdxtmpl = "$workdir\$($image -replace '^(.+)\.[^.]+$', '$1').vhdx"
 
 
 # switch to the script directory
-Set-Location $PSScriptRoot | out-null
+Set-Location $PSScriptRoot | Out-Null
 
 # stop on any error
 $ErrorActionPreference = "Stop"
-$PSDefaultParameterValues['*:ErrorAction']='Stop'
+$PSDefaultParameterValues['*:ErrorAction'] = 'Stop'
 
 $etchosts = "$env:windir\System32\drivers\etc\hosts"
 
 # note: network configs version 1 an 2 didn't work
-function get-metadata($vmname, $cblock, $ip) {
-if(!$cblock) {
-return @"
+function Get-Metadata($vmname, $cblock, $ip) {
+  if (!$cblock) {
+    return @"
 instance-id: id-$($vmname)
 local-hostname: $($vmname)
 "@
-} else {
-return @"
+  }
+  else {
+    return @"
 instance-id: id-$vmname
 network-interfaces: |
   auto eth0
@@ -134,11 +133,11 @@ network-interfaces: |
   gateway $($cblock).1
 local-hostname: $vmname
 "@
-}
+  }
 }
 
-function get-userdata-shared($cblock) {
-return @"
+function Get-UserdataShared($cblock) {
+  return @"
 #cloud-config
 
 mounts:
@@ -170,7 +169,7 @@ write_files:
       FallbackDNS=8.8.8.8
   - path: /tmp/append-etc-hosts
     content: |
-      $(set-etc-hosts -cblock $cblock -prefix '      ')
+      $(Set-HostsFile -cblock $cblock -prefix '      ')
   - path: /etc/modules-load.d/k8s.conf
     content: |
       br_netfilter
@@ -196,9 +195,9 @@ write_files:
 "@
 }
 
-function get-userdata-ubuntu($cblock) {
+function Get-UserdataUbuntu($cblock) {
 return @"
-$(get-userdata-shared -cblock $cblock)
+$(Get-UserdataShared -cblock $cblock)
   - path: /etc/systemd/network/99-default.link
     content: |
       [Match]
@@ -255,29 +254,29 @@ power_state:
 "@
 }
 
-function new-public-net($zwitch, $adapter) {
-  new-vmswitch -name $zwitch -allowmanagementos $true -netadaptername $adapter | format-list
+function New-PublicNet($zwitch, $adapter) {
+  New-VMSwitch -name $zwitch -allowmanagementos $true -netadaptername $adapter | Format-List
 }
 
-function new-private-net($natnet, $zwitch, $cblock) {
-  new-vmswitch -name $zwitch -switchtype internal | format-list
-  new-netipaddress -ipaddress "$($cblock).1" -prefixlength 24 -interfacealias "vEthernet ($zwitch)" | format-list
-  new-netnat -name $natnet -internalipinterfaceaddressprefix "$($cblock).0/24" | format-list
+function New-PrivateNet($natnet, $zwitch, $cblock) {
+  New-VMSwitch -name $zwitch -switchtype internal | Format-List
+  New-NetIPAddress -ipaddress "$($cblock).1" -prefixlength 24 -interfacealias "vEthernet ($zwitch)" | Format-List
+  New-NetNat -name $natnet -internalipinterfaceaddressprefix "$($cblock).0/24" | Format-List
 }
 
-function write-yaml-contents($path, $cblock) {
-  set-content $path ([byte[]][char[]] `
-    "$(&"get-userdata-$distro" -cblock $cblock)`n") -encoding byte
+function Write-YamlContents($path, $cblock) {
+  Set-Content $path ([byte[]][char[]] `
+      "$(&"get-userdata-$distro" -cblock $cblock)`n") -encoding byte
 }
 
-function write-iso-contents($vmname, $cblock, $ip) {
-  mkdir $workdir\$vmname\cidata -ea 0 | out-null
-  set-content $workdir\$vmname\cidata\meta-data ([byte[]][char[]] `
-    "$(get-metadata -vmname $vmname -cblock $cblock -ip $ip)") -encoding byte
-  write-yaml-contents -path $workdir\$vmname\cidata\user-data -cblock $cblock
+function Write-ISOContents($vmname, $cblock, $ip) {
+  mkdir $workdir\$vmname\cidata -ea 0 | Out-Null
+  Set-Content $workdir\$vmname\cidata\meta-data ([byte[]][char[]] `
+      "$(Get-Metadata -vmname $vmname -cblock $cblock -ip $ip)") -encoding byte
+  Write-YamlContents -path $workdir\$vmname\cidata\user-data -cblock $cblock
 }
 
-function new-iso($vmname) {
+function New-ISO($vmname) {
   $fsi = new-object -ComObject IMAPI2FS.MsftFileSystemImage
   $fsi.FileSystemsToCreate = 3
   $fsi.VolumeName = 'cidata'
@@ -297,72 +296,73 @@ function new-iso($vmname) {
           var i = stream as System.Runtime.InteropServices.ComTypes.IStream;
           if (o != null) { while (blkCnt-- > 0) { i.Read(buf, blkSz, ptr); o.Write(buf, 0, bytes); }
             o.Flush(); o.Close(); }}}
-"@ }
+"@ 
+  }
   [ISOFile]::Create($isopath, $res.ImageStream, $res.BlockSize, $res.TotalBlocks)
 }
 
-function new-machine($zwitch, $vmname, $cpus, $mem, $hdd, $vhdxtmpl, $cblock, $ip, $mac) {
+function New-Machine($zwitch, $vmname, $cpus, $mem, $hdd, $vhdxtmpl, $cblock, $ip, $mac) {
   $vmdir = "$workdir\$vmname"
   $vhdx = "$workdir\$vmname\$vmname.vhdx"
 
-  new-item -itemtype directory -force -path $vmdir | out-null
+  New-Item -itemtype directory -force -path $vmdir | Out-Null
 
-  if (!(test-path $vhdx)) {
-    copy-item -path $vhdxtmpl -destination $vhdx -force
-    resize-vhd -path $vhdx -sizebytes $hdd
+  if (!(Test-Path $vhdx)) {
+    Copy-Item -path $vhdxtmpl -destination $vhdx -force
+    Resize-VHD -path $vhdx -sizebytes $hdd
 
-    write-iso-contents -vmname $vmname -cblock $cblock -ip $ip
-    # new-iso -vmname $vmname
+    Write-ISOContents -vmname $vmname -cblock $cblock -ip $ip
+    # New-ISO -vmname $vmname
     Copy-Item "$workdir\isos\$vmname.iso" -Destination "$workdir\$vmname"
 
-    $vm = new-vm -name $vmname -memorystartupbytes $mem -generation $generation `
+    $vm = New-VM -name $vmname -memorystartupbytes $mem -generation $generation `
       -switchname $zwitch -vhdpath $vhdx -path $workdir
 
-    if($generation -eq 2) {
-      set-vmfirmware -vm $vm -enablesecureboot off
+    if ($generation -eq 2) {
+      Set-VMFirmware -vm $vm -enablesecureboot off
     }
 
-    set-vmprocessor -vm $vm -count $cpus
-    add-vmdvddrive -vmname $vmname -path $workdir\$vmname\$vmname.iso
+    Set-VMProcessor -vm $vm -count $cpus
+    Add-VMDvdDrive -vmname $vmname -path $workdir\$vmname\$vmname.iso
 
-    if(!$mac) { $mac = new-mac-address }
+    if (!$mac) { $mac = New-MacAddress }
 
-    get-vmnetworkadapter -vm $vm | set-vmnetworkadapter -staticmacaddress $mac
-    set-vmcomport -vmname $vmname -number 2 -path \\.\pipe\$vmname
+    Get-VMNetworkAdapter -vm $vm | Set-VMNetworkAdapter -staticmacaddress $mac
+    Set-VMComPort -vmname $vmname -number 2 -path \\.\pipe\$vmname
   }
-  start-vm -name $vmname
+  Start-VM -name $vmname
 }
 
 # Write ISO file to local machine
-function write-iso-file($zwitch, $vmname, $cpus, $mem, $hdd, $vhdxtmpl, $cblock, $ip, $mac) {
+function Write-ISO($zwitch, $vmname, $cpus, $mem, $hdd, $vhdxtmpl, $cblock, $ip, $mac) {
   $vmdir = "$workdir\$vmname"
   $vhdx = "$workdir\$vmname\$vmname.vhdx"
-  new-item -itemtype directory -force -path $vmdir | out-null
-  if (!(test-path $vhdx)) {
-    copy-item -path $vhdxtmpl -destination $vhdx -force
-    resize-vhd -path $vhdx -sizebytes $hdd
+  New-Item -itemtype directory -force -path $vmdir | Out-Null
+  if (!(Test-Path $vhdx)) {
+    Copy-Item -path $vhdxtmpl -destination $vhdx -force
+    Resize-VHD -path $vhdx -sizebytes $hdd
 
-    write-iso-contents -vmname $vmname -cblock $cblock -ip $ip
-    new-iso -vmname $vmname
+    Write-ISOContents -vmname $vmname -cblock $cblock -ip $ip
+    New-ISO -vmname $vmname
   }
 }
 
-function remove-machine($name) {
-  stop-vm $name -turnoff -confirm:$false -ea silentlycontinue
-  remove-vm $name -force -ea silentlycontinue
-  remove-item -recurse -force $workdir\$name
+function Remove-Machine($name) {
+  Stop-VM $name -turnoff -confirm:$false -ea silentlycontinue
+  Remove-VM $name -force -ea silentlycontinue
+  Remove-Item -recurse -force $workdir\$name
 }
 
-function remove-public-net($zwitch) {
-  remove-vmswitch -name $zwitch -force -confirm:$false
+function Remove-PublicNet($zwitch) {
+  Remove-VMswitch -name $zwitch -force -confirm:$false
 }
 
-function remove-private-net($zwitch, $natnet) {
-  remove-vmswitch -name $zwitch -force -confirm:$false
-  remove-netnat -name $natnet -confirm:$false
+function Remove-PrivateNet($zwitch, $natnet) {
+  Remove-VMswitch -name $zwitch -force -confirm:$false
+  Remove-NetNat -name $natnet -confirm:$false
 }
 
-function new-mac-address() {
+function New-MacAddress() {
   return "02$((1..5 | ForEach-Object { '{0:X2}' -f (get-random -max 256) }) -join '')"
 }
 
@@ -370,17 +370,17 @@ function basename($path) {
   return $path.substring(0, $path.lastindexof('.'))
 }
 
-function new-vhdx-tmpl($imageurl, $srcimg, $vhdxtmpl) {
-  if (!(test-path $workdir)) {
-    mkdir $workdir | out-null
+function New-VHDXTmpl($imageurl, $srcimg, $vhdxtmpl) {
+  if (!(Test-Path $workdir)) {
+    mkdir $workdir | Out-Null
   }
-  if (!(test-path $srcimg$archive)) {
-    get-file -url $imageurl -saveto $srcimg$archive
+  if (!(Test-Path $srcimg$archive)) {
+    Get-File -url $imageurl -saveto $srcimg$archive
   }
 
-  get-item -path $srcimg$archive | ForEach-Object { write-host 'srcimg:', $_.name, ([math]::round($_.length/1MB, 2)), 'MB' }
+  Get-Item -path $srcimg$archive | ForEach-Object { Write-Host 'srcimg:', $_.name, ([math]::round($_.length / 1MB, 2)), 'MB' }
 
-  if($sha256file) {
+  if ($sha256file) {
     $hash = shasum256 -shaurl "$imagebase/$sha256file" -diskitem $srcimg$archive -item $image$archive
     Write-Output "checksum: $hash"
   }
@@ -388,36 +388,36 @@ function new-vhdx-tmpl($imageurl, $srcimg, $vhdxtmpl) {
     Write-Output "no sha256file specified, skipping integrity ckeck"
   }
 
-  if(($archive -eq '.tar.gz') -and (!(test-path $srcimg))) {
+  if (($archive -eq '.tar.gz') -and (!(Test-Path $srcimg))) {
     tar xzf $srcimg$archive -C $workdir
   }
-  elseif(($archive -eq '.xz') -and (!(test-path $srcimg))) {
+  elseif (($archive -eq '.xz') -and (!(Test-Path $srcimg))) {
     7z e $srcimg$archive "-o$workdir"
   }
-  elseif(($archive -eq '.bz2') -and (!(test-path $srcimg))) {
+  elseif (($archive -eq '.bz2') -and (!(Test-Path $srcimg))) {
     7z e $srcimg$archive "-o$workdir"
   }
 
-  if (!(test-path $vhdxtmpl)) {
+  if (!(Test-Path $vhdxtmpl)) {
     qemu-img.exe convert $srcimg -O vhdx -o subformat=dynamic $vhdxtmpl
   }
 
   Write-Output ''
-  get-item -path $vhdxtmpl | ForEach-Object { write-host 'vhxdtmpl:', $_.name, ([math]::round($_.length/1MB, 2)), 'MB' }
+  Get-Item -path $vhdxtmpl | ForEach-Object { Write-Host 'vhxdtmpl:', $_.name, ([math]::round($_.length / 1MB, 2)), 'MB' }
   return
 }
 
-function get-file($url, $saveto) {
+function Get-File($url, $saveto) {
   Write-Output "downloading $url to $saveto"
   $progresspreference = 'silentlycontinue'
-  invoke-webrequest $url -usebasicparsing -outfile $saveto # too slow w/ indicator
+  Invoke-Webrequest $url -usebasicparsing -outfile $saveto # too slow w/ indicator
   $progresspreference = 'continue'
 }
 
-function set-etc-hosts($cblock, $prefix) {
+function Set-HostsFile($cblock, $prefix) {
   $ret = switch ($nettype) {
     'private' {
-@"
+      @"
 #
 $prefix#
 $prefix$($cblock).10 master
@@ -441,43 +441,43 @@ $prefix#
   return $ret
 }
 
-function update-etc-hosts($cblock) {
-  set-etc-hosts -cblock $cblock -prefix '' | out-file -encoding utf8 -append $etchosts
-  get-content $etchosts
+function Update-HostsFile($cblock) {
+  Set-HostsFile -cblock $cblock -prefix '' | Out-File -encoding utf8 -append $etchosts
+  Get-Content $etchosts
 }
 
-function new-nodes($num, $cblock) {
+function New-Nodes($num, $cblock) {
   1..$num | ForEach-Object {
     Write-Output creating node $_
-    new-machine -zwitch $zwitch -vmname "node$_" -cpus 4 -mem 4GB -hdd 40GB `
-      -vhdxtmpl $vhdxtmpl -cblock $cblock -ip $(10+$_)
+    New-Machine -zwitch $zwitch -vmname "node$_" -cpus 4 -mem 4GB -hdd 40GB `
+      -vhdxtmpl $vhdxtmpl -cblock $cblock -ip $(10 + $_)
   }
 }
 
-function remove-nodes($num) {
+function Remove-Nodes($num) {
   1..$num | ForEach-Object {
     Write-Output deleting node $_
-    remove-machine -name "node$_"
+    Remove-Machine -name "node$_"
   }
 }
 
-function get-our-vms() {
-  return get-vm | where-object { ($_.name -match 'master|node.*') }
+function Get-K8sVM() {
+  return get-vm | Where-Object { ($_.name -match 'master|node.*') }
 }
 
 function get-our-running-vms() {
-  return get-vm | where-object { ($_.state -eq 'running') -and ($_.name -match 'master|node.*') }
+  return get-vm | Where-Object { ($_.state -eq 'running') -and ($_.name -match 'master|node.*') }
 }
 
 function shasum256($shaurl, $diskitem, $item) {
   $pat = "^(\S+)\s+\*?$([regex]::escape($item))$"
 
-  $hash = get-filehash -algo sha256 -path $diskitem | ForEach-Object { $_.hash}
+  $hash = Get-Filehash -algo sha256 -path $diskitem | ForEach-Object { $_.hash }
 
-  $webhash = ( invoke-webrequest $shaurl -usebasicparsing ).tostring().split("`n") | `
-    select-string $pat | ForEach-Object { $_.matches.groups[1].value }
+  $webhash = ( Invoke-Webrequest $shaurl -usebasicparsing ).tostring().split("`n") | `
+    Select-String $pat | ForEach-Object { $_.matches.groups[1].value }
 
-  if(!($hash -ieq $webhash)) {
+  if (!($hash -ieq $webhash)) {
     throw @"
     SHA256 MISMATCH:
        shaurl: $shaurl
@@ -490,7 +490,7 @@ function shasum256($shaurl, $diskitem, $item) {
   return $hash
 }
 
-function get-ctrlc() {
+function Get-Ctrlc() {
   if ([console]::KeyAvailable) {
     $key = [system.console]::readkey($true)
     if (($key.modifiers -band [consolemodifiers]"control") -and ($key.key -eq "C")) {
@@ -500,44 +500,40 @@ function get-ctrlc() {
   return $false;
 }
 
-function wait-for-node-init($opts, $name) {
+function Wait-NodeInit($opts, $name) {
   while ( ! $(ssh $opts $guestuser@master 'ls ~/.init-completed 2> /dev/null') ) {
     Write-Output "waiting for $name to init..."
-    start-sleep -seconds 5
-    if( get-ctrlc ) { exit 1 }
+    Start-Sleep -seconds 5
+    if ( Get-Ctrlc ) { exit 1 }
   }
 }
 
-function convert-unc-path($path) {
-  $item = get-item $path
+function Convert-UNCPath($path) {
+  $item = Get-Item $path
   return $path.replace($item.root, '/').replace('\', '/')
 }
 
-function convert-unc-path2($path) {
+function Convert-UNCPath2($path) {
   return ($path -replace '^[^:]*:?(.+)$', "`$1").replace('\', '/')
 }
 
-function hyperctl() {
-  kubectl --kubeconfig=$HOME/.kube/config.hyperctl $args
-}
-
-function show-aliases($pwsalias, $bashalias) {
+function Show-Aliases($pwsalias, $bashalias) {
   Write-Output ""
   Write-Output "powershell alias:"
-  Write-Output "  write-output '$pwsalias' | out-file -encoding utf8 -append `$profile"
+  Write-Output "  write-output '$pwsalias' | Out-File -encoding utf8 -append `$profile"
   Write-Output ""
   Write-Output "bash alias:"
-  Write-Output "  write-output `"``n$($bashalias.replace('\', '\\'))``n`" | out-file -encoding utf8 -append -nonewline ~\.profile"
+  Write-Output "  write-output `"``n$($bashalias.replace('\', '\\'))``n`" | Out-File -encoding utf8 -append -nonewline ~\.profile"
   Write-Output ""
   Write-Output "  -> restart your shell after applying the above"
 }
 
-function initialize-kubeconfig() {
-  new-item -itemtype directory -force -path $HOME\.kube | out-null
+function Save-KubeConnfig() {
+  New-Item -itemtype directory -force -path $HOME\.kube | Out-Null
   scp $sshopts $guestuser@master:.kube/config $HOME\.kube\config
 
-  $cachedir="$HOME\.kube\cache\discovery\$cidr.10_6443"
-  if (test-path $cachedir) {
+  $cachedir = "$HOME\.kube\cache\discovery\$cidr.10_6443"
+  if (Test-Path $cachedir) {
     Write-Output ""
     Write-Output "deleting previous $cachedir"
     Write-Output ""
@@ -551,39 +547,10 @@ function initialize-kubeconfig() {
   kubectl get nodes
 }
 
-function install-helm() {
-  if (!(get-command "helm" -ea silentlycontinue)) {
-    choco install -y kubernetes-helm
-  }
-  else {
-    choco upgrade kubernetes-helm
-  }
-
-  Write-Output ""
-  Write-Output "helm version: $(helm version)"
-
-  $helm = "helm --kubeconfig $(convert-unc-path2 $HOME\.kube\config.hyperctl)"
-  $pwsalias = "function hyperhelm() { $helm `$args }"
-  $bashalias = "alias hyperhelm='$helm'"
-
-  show-aliases -pwsalias $pwsalias -bashalias $bashalias
-  Write-Output "  -> then you can use e.g.: hyperhelm version"
-}
-
-function show-local-repo-tips() {
-Write-Output @"
-# you can now publish your apps, e.g.:
-
-TAG=master:30699/yourapp:`$(git log --pretty=format:'%h' -n 1)
-docker build ../yourapp/image/ --tag `$TAG
-docker push `$TAG
-hyperhelm install yourapp ../yourapp/chart/ --set image=`$TAG
-"@
-}
 
 Write-Output ''
 
-if($args.count -eq 0) {
+if ($args.count -eq 0) {
   $args = @( 'help' )
 }
 
@@ -593,41 +560,36 @@ switch -regex ($args) {
   Practice real Kubernetes configurations on a local multi-node cluster.
   Inspect and optionally customize this script before use.
 
-  Usage: .\hyperctl.ps1 command+
+  Usage: .\hyperv-k8s.ps1 command+
 
   Commands:
 
      (pre-requisites are marked with ->)
 
-  -> install - install basic chocolatey packages
-      config - show script config vars
-       print - print etc/hosts, network interfaces and mac addresses
-  ->     net - install private or public host network
-  ->   hosts - append private network node names to etc/hosts
-  ->   image - download the VM image
-      master - create and launch master node
-       nodeN - create and launch worker node (node1, node2, ...)
-        info - display info about nodes
-        init - initialize k8s and setup host kubectl
-      reboot - soft-reboot the nodes
-    shutdown - soft-shutdown the nodes
-        save - snapshot the VMs
-     restore - restore VMs from latest snapshots
-        stop - stop the VMs
-       start - start the VMs
-      delete - stop VMs and delete the VM files
-      delnet - delete the network
-         iso - write cloud config data into a local yaml
-      docker - setup local docker with the master node
-       share - setup local fs sharing with docker on master
-       helm2 - setup helm 2 with tiller in k8s
-       helm3 - setup helm 3
-        repo - install local docker repo in k8s
-
-  For more info, see: https://github.com/youurayy/hyperctl
+           -> install - install basic chocolatey packages
+               config - show script config vars
+                print - print etc/hosts, network interfaces and mac addresses
+           ->     net - install private or public host network
+           ->   hosts - append private network node names to etc/hosts
+           ->   image - download the VM image
+               master - create and launch master node
+                nodeN - create and launch worker node (node1, node2, ...)
+                 info - display info about nodes
+   initialize-kubeadm - initialize kubeadm
+  invoke-kubeadm-join - initialize k8s and setup host kubectl
+Save-KubeConnfig - initialize k8s and setup host kubectl
+               reboot - soft-reboot the nodes
+             shutdown - soft-shutdown the nodes
+                 save - snapshot the VMs
+              restore - restore VMs from latest snapshots
+                 stop - stop the VMs
+                start - start the VMs
+               delete - stop VMs and delete the VM files
+               delnet - delete the network
+               docker - setup local docker with the master node
 "@
   }
-  ^install$ {
+  ^Install-Tools$ {
     # Install qemu-img
     if (Test-Path 'C:\qemu-img') {
       Remove-Item 'C:\qemu-img' -Force -Recurse
@@ -654,9 +616,9 @@ switch -regex ($args) {
     $oldPath = Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment'
     $newPath = "$oldPath;C:\kubectl;C:\git\bin;C:\docker;C:\qemu-img"
     Set-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH -Value $newPath
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User") 
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User") 
   }
-  ^config$ {
+  ^Show-Config$ {
     Write-Output "   version: $version"
     Write-Output "    config: $config"
     Write-Output "    distro: $distro"
@@ -670,7 +632,7 @@ switch -regex ($args) {
     Write-Output "   nettype: $nettype"
     switch ($nettype) {
       'private' { Write-Output "    natnet: $natnet" }
-      'public'  { Write-Output "   adapter: $adapter" }
+      'public' { Write-Output "   adapter: $adapter" }
     }
     Write-Output "      cpus: $cpus"
     Write-Output "       ram: $ram"
@@ -682,77 +644,77 @@ switch -regex ($args) {
   }
   ^print$ {
     Write-Output "***** $etchosts *****"
-    get-content $etchosts | select-string -pattern '^#|^\s*$' -notmatch
+    Get-Content $etchosts | Select-String -pattern '^#|^\s*$' -notmatch
 
     Write-Output "`n***** configured mac addresses *****`n"
     Write-Output $macs
 
     Write-Output "`n***** network interfaces *****`n"
-    (get-vmswitch 'switch' -ea:silent | `
-      format-list -property name, id, netadapterinterfacedescription | out-string).trim()
+    (Get-VMSwitch 'switch' -ea:silent | `
+        Format-List -property name, id, netadapterinterfacedescription | Out-String).trim()
 
     if ($nettype -eq 'private') {
       Write-Output ''
-      (get-netipaddress -interfacealias 'vEthernet (switch)' -ea:silent | `
-        format-list -property ipaddress, interfacealias | out-string).trim()
+      (Get-NetIPAddress -interfacealias 'vEthernet (switch)' -ea:silent | `
+          Format-List -property ipaddress, interfacealias | Out-String).trim()
       Write-Output ''
-      (get-netnat 'natnet' -ea:silent | format-list -property name, internalipinterfaceaddressprefix | out-string).trim()
+      (Get-NetNat 'natnet' -ea:silent | Format-List -property name, internalipinterfaceaddressprefix | Out-String).trim()
     }
   }
-  ^net$ {
+  ^Deploy-Network$ {
     switch ($nettype) {
-      'private' { new-private-net -natnet $natnet -zwitch $zwitch -cblock $cidr }
-      'public' { new-public-net -zwitch $zwitch -adapter $adapter }
+      'private' { New-PrivateNet -natnet $natnet -zwitch $zwitch -cblock $cidr }
+      'public' { New-PublicNet -zwitch $zwitch -adapter $adapter }
     }
   }
-  ^hosts$ {
+  ^Deploy-HostsFile$ {
     switch ($nettype) {
-      'private' { update-etc-hosts -cblock $cidr }
-      'public' { Write-Output "not supported for public net - use dhcp"  }
+      'private' { Update-HostsFile -cblock $cidr }
+      'public' { Write-Output "not supported for public net - use dhcp" }
     }
   }
-  ^macs$ {
+  ^Show-Macs$ {
     $cnt = 10
     0..$cnt | ForEach-Object {
-      $comment = switch ($_) {0 {'master'} default {"node$_"}}
-      $comma = if($_ -eq $cnt) { '' } else { ',' }
-      Write-Output "  '$(new-mac-address)'$comma # $comment"
+      $comment = switch ($_) { 0 { 'master' } default { "node$_" } }
+      $comma = if ($_ -eq $cnt) { '' } else { ',' }
+      Write-Output "  '$(New-MacAddress)'$comma # $comment"
     }
   }
-  ^image$ {
-    new-vhdx-tmpl -imageurl $imageurl -srcimg $srcimg -vhdxtmpl $vhdxtmpl
+  ^Save-Image$ {
+    New-VHDXTmpl -imageurl $imageurl -srcimg $srcimg -vhdxtmpl $vhdxtmpl
   }
-  ^master$ {
-    new-machine -zwitch $zwitch -vmname 'master' -cpus $cpus `
+  ^Deploy-Master$ {
+    New-Machine -zwitch $zwitch -vmname 'master' -cpus $cpus `
       -mem $(Invoke-Expression $ram) -hdd $(Invoke-Expression $hdd) `
       -vhdxtmpl $vhdxtmpl -cblock $cidr -ip '10' -mac $macs[0]
   }
-  '(^node(?<number>\d+)$)' {
+  '(^Deploy-Node(?<number>\d+)$)' {
     $num = [int]$matches.number
     $name = "node$($num)"
-    new-machine -zwitch $zwitch -vmname $name -cpus 1 `
+    New-Machine -zwitch $zwitch -vmname $name -cpus $cpus `
       -mem $(Invoke-Expression $ram) -hdd $(Invoke-Expression $hdd) `
       -vhdxtmpl $vhdxtmpl -cblock $cidr -ip "$($num + 10)" -mac $macs[$num]
   }
-  ^write-iso-master$ {
-    write-iso-file -zwitch $zwitch -vmname 'master' -cpus $cpus `
+  ^Save-MasterIso$ {
+    Write-ISO -zwitch $zwitch -vmname 'master' -cpus $cpus `
       -mem $(Invoke-Expression $ram) -hdd $(Invoke-Expression $hdd) `
       -vhdxtmpl $vhdxtmpl -cblock $cidr -ip '10' -mac $macs[0]
   }
-  '(^write-iso-node(?<number>\d+)$)' {
+  '(^Save-Node(?<number>\d+)$)Iso' {
     $num = [int]$matches.number
     $name = "node$($num)"
-    write-iso-file -zwitch $zwitch -vmname $name -cpus 1 `
+    Write-ISO -zwitch $zwitch -vmname $name -cpus $cpus `
       -mem $(Invoke-Expression $ram) -hdd $(Invoke-Expression $hdd) `
       -vhdxtmpl $vhdxtmpl -cblock $cidr -ip "$($num + 10)" -mac $macs[$num]
   }
-  ^info$ {
-    get-our-vms
+  ^Get-Info$ {
+    Get-K8sVM
   }
-  ^initialize-kubeadm$ {
-    get-our-vms | ForEach-Object { wait-for-node-init -opts $sshopts -name $_.name }
+  ^Initialize-Kubeadm$ {
+    Get-K8sVM | ForEach-Object { Wait-NodeInit -opts $sshopts -name $_.name }
 
-    $init = "sudo kubeadm init --pod-network-cidr=$cninet --ignore-preflight-errors=NumCPU && \
+    $init = "sudo kubeadm init --pod-network-cidr=$cninet && \
       mkdir -p `$HOME/.kube && \
       sudo cp /etc/kubernetes/admin.conf `$HOME/.kube/config && \
       sudo chown `$(id -u):`$(id -g) `$HOME/.kube/config && \
@@ -766,8 +728,8 @@ switch -regex ($args) {
       exit 1
     }
   }
-  ^invoke-kubeadm-join$ {
-    if((get-our-vms | Where-Object { $_.name -match "node.+" }).count -eq 0) {
+  ^Start-KubeadmJoin$ {
+    if ((Get-K8sVM | Where-Object { $_.name -match "node.+" }).count -eq 0) {
       Write-Output ""
       Write-Output "no worker nodes, removing NoSchedule taint from master..."
       ssh $sshopts $guestuser@master 'kubectl taint nodes master node-role.kubernetes.io/master:NoSchedule-'
@@ -775,165 +737,78 @@ switch -regex ($args) {
     }
     else {
       $joincmd = $(ssh $sshopts $guestuser@master 'sudo kubeadm token create --print-join-command')
-      get-our-vms | Where-Object { $_.name -match "node.+" } |
-        ForEach-Object {
-          $node = $_.name
-          Write-Output "`nexecuting on $node`: $joincmd"
-          ssh $sshopts $guestuser@$node sudo $joincmd
-          if (!$?) {
-            Write-Output "$node init has failed, aborting"
-            exit 1
-          }
+      Get-K8sVM | Where-Object { $_.name -match "node.+" } |
+      ForEach-Object {
+        $node = $_.name
+        Write-Output "`nexecuting on $node`: $joincmd"
+        ssh $sshopts $guestuser@$node sudo $joincmd
+        if (!$?) {
+          Write-Output "$node init has failed, aborting"
+          exit 1
         }
+      }
     }
   }
-  ^initialize-kubeconfig$ {
-    initialize-kubeconfig
+  ^Save-KubeConfig$ {
+    Save-KubeConnfig
   }
-  ^reboot$ {
-    get-our-vms | ForEach-Object { $node = $_.name; $(ssh $sshopts $guestuser@$node 'sudo reboot') }
+  ^Restart-K8sVM$ {
+    Get-K8sVM | ForEach-Object { $node = $_.name; $(ssh $sshopts $guestuser@$node 'sudo reboot') }
   }
-  ^shutdown$ {
-    get-our-vms | ForEach-Object { $node = $_.name; $(ssh $sshopts $guestuser@$node 'sudo shutdown -h now') }
+  ^Invoke-Shutdown$ {
+    Get-K8sVM | ForEach-Object { $node = $_.name; $(ssh $sshopts $guestuser@$node 'sudo shutdown -h now') }
   }
-  ^save$ {
-    get-our-vms | checkpoint-vm
+  ^Save-K8sVM$ {
+    Get-K8sVM | Checkpoint-VM
   }
-  ^restore$ {
-    get-our-vms | foreach-object { $_ | get-vmsnapshot | Sort-Object creationtime | `
-      Select-Object -last 1 | restore-vmsnapshot -confirm:$false }
+  ^Restore-K8sVM$ {
+    Get-K8sVM | Foreach-Object { $_ | Get-VMSnapshot | Sort-Object creationtime | `
+        Select-Object -last 1 | Restore-VMSnapshot -confirm:$false }
   }
-  ^stop$ {
-    get-our-vms | stop-vm
+  ^Stop-K8sVM$ {
+    Get-K8sVM | Stop-VM
   }
-  ^start$ {
-    get-our-vms | start-vm
+  ^Start-K8sVM$ {
+    Get-K8sVM | Start-VM
   }
-  ^delete$ {
-    get-our-vms | ForEach-Object { remove-machine -name $_.name }
+  ^Remove-K8sVM$ {
+    Get-K8sVM | ForEach-Object { Remove-Machine -name $_.name }
   }
-  ^delnet$ {
+  ^Remove-Network$ {
     switch ($nettype) {
-      'private' { remove-private-net -zwitch $zwitch -natnet $natnet }
-      'public' { remove-public-net -zwitch $zwitch }
+      'private' { Remove-PrivateNet -zwitch $zwitch -natnet $natnet }
+      'public' { Remove-PublicNet -zwitch $zwitch }
     }
   }
-  ^time$ {
+  ^Get-Time$ {
     Write-Output "local: $(Get-date)"
-    get-our-vms | ForEach-Object {
+    Get-K8sVM | ForEach-Object {
       $node = $_.name
       Write-Output ---------------------$node
       # ssh $sshopts $guestuser@$node "date ; if which chronyc > /dev/null; then sudo chronyc makestep ; date; fi"
       ssh $sshopts $guestuser@$node "date"
     }
   }
-  ^track$ {
-    get-our-vms | ForEach-Object {
+  ^Start-Track$ {
+    Get-K8sVM | ForEach-Object {
       $node = $_.name
       Write-Output ---------------------$node
       ssh $sshopts $guestuser@$node "date ; sudo chronyc tracking"
     }
   }
-  ^docker$ {
-    $saveto = "C:\ProgramData\chocolatey\bin\docker.exe"
-    if (!(test-path $saveto)) {
-      Write-Output "installing docker cli..."
-      get-file -url $dockercli -saveto $saveto
-    }
+  ^Show-DockerConfig$ {
     Write-Output ""
     Write-Output "powershell:"
-    Write-Output "  write-output '`$env:DOCKER_HOST = `"ssh://$guestuser@master`"' | out-file -encoding utf8 -append `$profile"
+    Write-Output "  write-output '`$env:DOCKER_HOST = `"ssh://$guestuser@master`"' | Out-File -encoding utf8 -append `$profile"
     Write-Output ""
     Write-Output "bash:"
-    Write-Output "  write-output `"``nexport DOCKER_HOST='ssh://$guestuser@master'``n`" | out-file -encoding utf8 -append -nonewline ~\.profile"
+    Write-Output "  write-output `"``nexport DOCKER_HOST='ssh://$guestuser@master'``n`" | Out-File -encoding utf8 -append -nonewline ~\.profile"
     Write-Output ""
     Write-Output ""
     Write-Output "(restart your shell after applying the above)"
   }
-  ^share$ {
-    if (!( get-smbshare -name 'hyperctl' -ea silentlycontinue )) {
-      Write-Output "creating host $HOME -> /hyperctl share..."
-      new-smbshare -name 'hyperctl' -path $HOME
-    }
-    else {
-      Write-Output "(not creating $HOME -> /hyperctl share, already present...)"
-    }
-    Write-Output ""
-
-    $unc = convert-unc-path -path $HOME
-    $cmd = "sudo mkdir -p $unc && sudo mount -t cifs //$cidr.1/hyperctl $unc -o sec=ntlm,username=$guestuser,vers=3.0,sec=ntlmv2,noperm"
-    set-clipboard -value $cmd
-    Write-Output $cmd
-    Write-Output "  ^ copied to the clipboard, paste & execute on master:"
-    Write-Output "    (just right-click (to paste), <enter your Windows password>, Enter, Ctrl+D)"
-    Write-Output ""
-    ssh $sshopts $guestuser@master
-
-    Write-Output ""
-    $unc = convert-unc-path -path $pwd.path
-    $cmd = "docker run -it -v $unc`:$unc r-base ls -l $unc"
-    set-clipboard -value $cmd
-    Write-Output $cmd
-    Write-Output "  ^ copied to the clipboard, paste & execute locally to test the sharing"
-  }
-  ^helm$ {
-    install-helm
-  }
-  ^repo$ {
-    # install openssl if none is provided
-    # don't try to install one bc the install is intrusive and not fully automated
-    $openssl = "openssl.exe"
-    if(!(get-command "openssl" -ea silentlycontinue)) {
-      # fall back to cygwin openssl if installed
-      $openssl = "C:\tools\cygwin\bin\openssl.exe"
-      if(!(test-path $openssl)) {
-        Write-Output "error: please make sure 'openssl' command is in the path"
-        Write-Output "(or install Cygwin so that '$openssl' exists)"
-        Write-Output ""
-        exit 1
-      }
-    }
-
-    # add remote helm repo to you local ~/.helm registry
-    hyperhelm repo add stable https://kubernetes-charts.storage.googleapis.com
-    hyperhelm repo update
-
-    # prepare secrets for local repo
-    $certs="$workdir\certs"
-    mkdir $certs -ea 0 | out-null
-    $expr = "$openssl req -newkey rsa:4096 -nodes -sha256 " +
-      "-subj `"/C=/ST=/L=/O=/CN=master`" -keyout $certs/tls.key -x509 " +
-      "-days 365 -out $certs/tls.cert"
-    invoke-expression $expr
-    hyperctl create secret tls master --cert=$certs/tls.cert --key=$certs/tls.key
-
-    # distribute certs to our nodes
-    get-our-vms | ForEach-Object {
-      $node = $_.name
-      $(scp $sshopts $certs/tls.cert $guestuser@$node`:)
-      $(ssh $sshopts $guestuser@$node 'sudo mkdir -p /etc/docker/certs.d/master:30699/')
-      $(ssh $sshopts $guestuser@$node 'sudo mv tls.cert /etc/docker/certs.d/master:30699/ca.crt')
-    }
-
-    hyperhelm install registry stable/docker-registry `
-      --set tolerations[0].key=node-role.kubernetes.io/master `
-      --set tolerations[0].operator=Exists `
-      --set tolerations[0].effect=NoSchedule `
-      --set nodeSelector.kubernetes\.io/hostname=master `
-      --set tlsSecretName=master `
-      --set service.type=NodePort `
-      --set service.nodePort=30699
-
-    Write-Output ''
-    show-local-repo-tips
-    Write-Output ''
-  }
-  ^iso$ {
-    write-yaml-contents -path "$($distro).yaml" -cblock $cidr
-    Write-Output "debug cloud-config was written to .\${distro}.yaml"
-  }
   default {
-    Write-Output 'invalid command; try: .\hyperctl.ps1 help'
+    Write-Output 'invalid command; try: .\hyperv-k8s.ps1 help'
   }
 }
 
