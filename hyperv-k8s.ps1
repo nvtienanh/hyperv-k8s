@@ -266,7 +266,7 @@ function New-PrivateNet($natnet, $zwitch, $cblock) {
 
 function Write-YamlContents($path, $cblock) {
   Set-Content $path ([byte[]][char[]] `
-      "$(&"get-userdata-$distro" -cblock $cblock)`n") -encoding byte
+      "$(&"get-userdata$distro" -cblock $cblock)`n") -encoding byte
 }
 
 function Write-ISOContents($vmname, $cblock, $ip) {
@@ -566,27 +566,27 @@ switch -regex ($args) {
 
      (pre-requisites are marked with ->)
 
-           -> install - install basic chocolatey packages
-               config - show script config vars
-                print - print etc/hosts, network interfaces and mac addresses
-           ->     net - install private or public host network
-           ->   hosts - append private network node names to etc/hosts
-           ->   image - download the VM image
-               master - create and launch master node
-                nodeN - create and launch worker node (node1, node2, ...)
-                 info - display info about nodes
-   initialize-kubeadm - initialize kubeadm
-  invoke-kubeadm-join - initialize k8s and setup host kubectl
-Save-KubeConnfig - initialize k8s and setup host kubectl
-               reboot - soft-reboot the nodes
-             shutdown - soft-shutdown the nodes
-                 save - snapshot the VMs
-              restore - restore VMs from latest snapshots
-                 stop - stop the VMs
-                start - start the VMs
-               delete - stop VMs and delete the VM files
-               delnet - delete the network
-               docker - setup local docker with the master node
+       Install-Tools - Install packages kubectl, docker, qemu-img
+         Show-Config - Show script config vars
+      Deploy-Network - Install private or public host network
+    Deploy-HostsFile - Append private network node names to etc/hosts
+           Get-Image - Download the VM image
+       Deploy-Master - Create and launch master node
+        Deploy-NodeN - Create and launch worker node (node1, node2, ...)
+      Save-ISOMaster - Save master node iso
+       Save-ISONodeN - Save worker node iso (node1, node2, ...)
+            Get-Info - Display info about nodes
+  Initialize-Kubeadm - Initialize kubeadm
+   Start-KubeadmJoin - Run Kubeadm join command
+     Save-KubeConfig - Save Kube config to host
+       Restart-K8sVM - Soft-reboot the nodes
+     Invoke-Shutdown - Soft-shutdown the nodes
+          Save-K8sVM - Snapshot the VMs
+       Restore-K8sVM - Restore VMs from latest snapshots
+          Stop-K8sVM - Stop the VMs
+         Start-K8sVM - Start the VMs
+        Remove-K8sVM - Stop VMs and delete the VM files
+      Remove-Network - Delete the network
 "@
   }
   ^Install-Tools$ {
@@ -642,25 +642,6 @@ Save-KubeConnfig - initialize k8s and setup host kubectl
     Write-Output "   cniyaml: $cniyaml"
     Write-Output " dockercli: $dockercli"
   }
-  ^print$ {
-    Write-Output "***** $etchosts *****"
-    Get-Content $etchosts | Select-String -pattern '^#|^\s*$' -notmatch
-
-    Write-Output "`n***** configured mac addresses *****`n"
-    Write-Output $macs
-
-    Write-Output "`n***** network interfaces *****`n"
-    (Get-VMSwitch 'switch' -ea:silent | `
-        Format-List -property name, id, netadapterinterfacedescription | Out-String).trim()
-
-    if ($nettype -eq 'private') {
-      Write-Output ''
-      (Get-NetIPAddress -interfacealias 'vEthernet (switch)' -ea:silent | `
-          Format-List -property ipaddress, interfacealias | Out-String).trim()
-      Write-Output ''
-      (Get-NetNat 'natnet' -ea:silent | Format-List -property name, internalipinterfaceaddressprefix | Out-String).trim()
-    }
-  }
   ^Deploy-Network$ {
     switch ($nettype) {
       'private' { New-PrivateNet -natnet $natnet -zwitch $zwitch -cblock $cidr }
@@ -681,7 +662,7 @@ Save-KubeConnfig - initialize k8s and setup host kubectl
       Write-Output "  '$(New-MacAddress)'$comma # $comment"
     }
   }
-  ^Save-Image$ {
+  ^Get-Image$ {
     New-VHDXTmpl -imageurl $imageurl -srcimg $srcimg -vhdxtmpl $vhdxtmpl
   }
   ^Deploy-Master$ {
@@ -696,12 +677,12 @@ Save-KubeConnfig - initialize k8s and setup host kubectl
       -mem $(Invoke-Expression $ram) -hdd $(Invoke-Expression $hdd) `
       -vhdxtmpl $vhdxtmpl -cblock $cidr -ip "$($num + 10)" -mac $macs[$num]
   }
-  ^Save-MasterIso$ {
+  ^Save-ISOMaster$ {
     Write-ISO -zwitch $zwitch -vmname 'master' -cpus $cpus `
       -mem $(Invoke-Expression $ram) -hdd $(Invoke-Expression $hdd) `
       -vhdxtmpl $vhdxtmpl -cblock $cidr -ip '10' -mac $macs[0]
   }
-  '(^Save-Node(?<number>\d+)$)Iso' {
+  '(^Save-ISONode(?<number>\d+)$)' {
     $num = [int]$matches.number
     $name = "node$($num)"
     Write-ISO -zwitch $zwitch -vmname $name -cpus $cpus `
