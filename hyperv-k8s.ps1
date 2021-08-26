@@ -612,9 +612,9 @@ switch -regex ($args) {
     New-Item -Path "C:\" -Name "docker" -ItemType "directory"
     Invoke-WebRequest -Uri 'https://github.com/StefanScherer/docker-cli-builder/releases/download/20.10.5/docker.exe' -OutFile 'c:\docker\docker.exe'
 
-    # Add to PATH
-    $oldPath = Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment'
-    $newPath = "$oldPath;C:\kubectl;C:\git\bin;C:\docker;C:\qemu-img"
+    # Add to PATH    
+    $oldPath = (Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH).Path
+    $newPath = "$oldPath;C:\kubectl;C:\git\bin;C:\docker;C:\qemu-img"    
     Set-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment' -Name PATH -Value $newPath
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User") 
   }
