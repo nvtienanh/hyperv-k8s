@@ -1,6 +1,6 @@
 ```powershell
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.3.1/aio/deploy/recommended.yaml
-kubectl apply -f kubernetes-dashboard-service-np.yaml
+kubectl apply -f https://raw.githubusercontent.com/nvtienanh/hyperv-k8s/main/k8s/kubernetes-dashboard/kubernetes-dashboard-service-np.yaml
 kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | Select-String admin-user )
 kubectl -n kubernetes-dashboard describe secret admin-user-token-xkzqn
 kubectl apply -f `$(eval echo $cniyaml)"

@@ -3,7 +3,7 @@ kind: ServiceAccount
 metadata:
   name: admin-user
   namespace: kubernetes-dashboard
---- 
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -13,10 +13,10 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
 subjects:
-- kind: ServiceAccount
-  name: admin-user
-  namespace: kubernetes-dashboard
----   
+  - kind: ServiceAccount
+    name: admin-user
+    namespace: kubernetes-dashboard
+---
 kind: Service
 apiVersion: v1
 metadata:
@@ -27,9 +27,9 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - port: 8443
-    nodePort: 30002
-    targetPort: 8443
-    protocol: TCP
+    - port: 8443
+      nodePort: 30002
+      targetPort: 8443
+      protocol: TCP
   selector:
     k8s-app: kubernetes-dashboard
