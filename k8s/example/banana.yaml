@@ -1,5 +1,5 @@
 kind: Development
-apiVersion: v1
+apiVersion: apps/v1
 metadata:
   name: banana-app
   labels:
