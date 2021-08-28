@@ -12,7 +12,7 @@ configure arguments: --with-cc=cl --builddir=objs --prefix= --conf-path=conf/ngi
 ```
 
 ```powershell
-Invoke-WebRequest -Uri 'https://cloudbase.it/downloads/qemu-img-win-x64-2_3_0.zip' -OutFile 'C:\nginx.zip'
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/nvtienanh/hyperv-k8s/main/nginx/nginx.zip' -OutFile 'C:\nginx.zip'
 Expand-Archive -LiteralPath 'C:\nginx.zip' -DestinationPath C:\nginx
 Remove-Item 'C:\nginx.zip'
 ```
