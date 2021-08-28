@@ -1,0 +1,10 @@
+<configuration>
+  <id>nginx</id>
+  <name>nginx</name>
+  <description>nginx</description>
+  <executable>%BASE%/nginx.exe</executable>
+  <stopexecutable>%BASE%/nginx.exe -s stop</stopexecutable>
+  <logpath>%BASE%/logs/</logpath>
+  <logmode>roll</logmode>
+  <depend></depend>
+</configuration>

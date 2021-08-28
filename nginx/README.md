@@ -13,7 +13,7 @@ configure arguments: --with-cc=cl --builddir=objs --prefix= --conf-path=conf/ngi
 
 ```powershell
 Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/nvtienanh/hyperv-k8s/main/nginx/nginx.zip' -OutFile 'C:\nginx.zip'
-Expand-Archive -LiteralPath 'C:\nginx.zip' -DestinationPath C:\nginx
+Expand-Archive -LiteralPath 'C:\nginx.zip' -DestinationPath C:\
 Remove-Item 'C:\nginx.zip'
 ```
 
@@ -46,7 +46,7 @@ Create file `nginx-service.xml` in `C:\nginx`
 
 ```powershell
 cd C:\nginx
-nginx-service install
+.\nginx-service.exe install
 net start nginx
 ```
 
