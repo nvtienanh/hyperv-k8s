@@ -65,4 +65,8 @@ $trigger = New-JobTrigger -AtStartup -RandomDelay 00:00:30
 Register-ScheduledJob -Trigger $trigger -FilePath C:\nginx\startup.ps1 -Name StartNginx
 ```
 
+# Enable Firewall
 
+```powershell
+New-NetFirewallRule -DisplayName "Allow HTTP and HTTPs over Nginx" -Group "NGINX Reverse Proxy" -Direction Inbound -Action Allow -EdgeTraversalPolicy Allow -Protocol TCP -LocalPort 80,443 -Program "C:\nginx\nginx.exe"
+```
