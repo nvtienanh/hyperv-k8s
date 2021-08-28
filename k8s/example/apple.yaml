@@ -1,15 +1,26 @@
-kind: Deployment
 apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: apple-app
   labels:
     app: apple
 spec:
-  containers:
-    - name: apple-app
-      image: hashicorp/http-echo
-      args:
-        - "-text=apple"
+  selector:
+    matchLabels:
+      app: apple
+  template:
+    metadata:
+      labels:
+        app: apple
+    spec:
+      containers:
+        - name: apple-app
+          image: hashicorp/http-echo
+          args:
+            - "-text=apple"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5678
 ---
 kind: Service
 apiVersion: v1
