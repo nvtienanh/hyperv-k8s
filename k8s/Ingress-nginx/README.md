@@ -36,3 +36,6 @@ data:
       - 10.10.0.200-10.10.0.250
 ```
 
+```powershell
+kubectl apply -f https://raw.githubusercontent.com/nvtienanh/hyperv-k8s/main/k8s/Ingress-nginx/metallb-config.yaml
+```
