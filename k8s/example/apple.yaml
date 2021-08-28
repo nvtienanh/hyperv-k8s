@@ -31,3 +31,4 @@ spec:
     app: apple
   ports:
     - port: 5678 # Default port for image
+  type: LoadBalancer
