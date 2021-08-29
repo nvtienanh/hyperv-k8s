@@ -42,7 +42,7 @@ Create file `nginx-service.xml` in `C:\nginx`
 </configuration>
 ```
 
-## Install nginx server
+## Install nginx service
 
 ```powershell
 cd C:\nginx

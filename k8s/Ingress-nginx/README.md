@@ -17,7 +17,7 @@ kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.10.2/manif
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.10.2/manifests/metallb.yaml
 ```
 
-Create `metallb-confg.yaml`
+Create `metallb-config.yaml`
 
 ```yaml
 apiVersion: v1
