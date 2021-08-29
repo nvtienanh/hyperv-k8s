@@ -30,5 +30,5 @@ spec:
   selector:
     app: banana
   ports:
-    - port: 5678 # Default port for image
+    - port: 5678
   type: LoadBalancer

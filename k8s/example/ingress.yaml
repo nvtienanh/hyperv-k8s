@@ -1,19 +1,33 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: example-ingress
+  name: banana-ingress
   labels:
-    app: example-ingress
+    app: banana-ingress
   annotations:
-    kubernetes.io/ingress.class: nginx 
-    # cert-manager.io/cluster-issuer: letsencrypt-prod
-    # nginx.ingress.kubernetes.io/add-base-url: "true"
-    # nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    kubernetes.io/ingress.class: nginx
 spec:
-  # tls:
-  # - hosts:
-  #   - ipico.com.vn
-  #   secretName: cert-ipico.com.vn
+  rules:
+  - host: banana.adtsolutions.com.vn
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+                name: banana-service
+                port:
+                  number: 5678
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apple-ingress
+  labels:
+    app: apple-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
   rules:
   - host: apple.adtsolutions.com.vn
     http:
@@ -23,15 +37,5 @@ spec:
           backend:
             service:
                 name: apple-service
-                port:
-                  number: 5678
-  - host: banana.adtsolutions.com.vn
-    http:
-      paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-                name: banana-service
                 port:
                   number: 5678
