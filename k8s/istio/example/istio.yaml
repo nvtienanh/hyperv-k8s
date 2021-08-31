@@ -1,0 +1,98 @@
+--- # ---
+# apiVersion: networking.istio.io/v1alpha3
+# kind: Gateway
+# metadata:
+#   name: apple-gateway
+# spec:
+#   selector:
+#     istio: ingressgateway # use Istio default gateway implementation
+#   servers:
+#     - port:
+#         number: 80
+#         name: http
+#         protocol: HTTP
+#       hosts:
+#         - "apple.adtsolutions.com.vn"
+# ---
+# apiVersion: networking.istio.io/v1alpha3
+# kind: VirtualService
+# metadata:
+#   name: apple-app
+# spec:
+#   hosts:
+#     - "apple.adtsolutions.com.vn"
+#   gateways:
+#     - apple-gateway
+#   http:
+#     - match:
+#         - uri:
+#             prefix: /
+#       route:
+#         - destination:
+#             port:
+#               number: 5678
+#             host: apple-service
+
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: fruit-gateway
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "fruits.adtsolutions.com.vn"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fruit-service
+  labels:
+    app: fruit
+spec:
+  ports:
+    - port: 5678
+  selector:
+    app: fruit
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: fruit-rule
+spec:
+  host: fruit-service
+  subsets:
+    - name: fruit-apple
+      labels:
+        name: apple
+    - name: fruit-banana
+      labels:
+        name: banana
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: fruit-virtualservice
+spec:
+  hosts:
+    - "fruits.adtsolutions.com.vn"
+  gateways:
+    - fruit-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: fruit-service #Name of the service
+            subset: fruit-apple
+          weight: 50
+        - destination:
+            host: fruit-service #Name of the service
+            subset: fruit-banana
+          weight: 50

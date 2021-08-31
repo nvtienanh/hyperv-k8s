@@ -19,5 +19,7 @@ Add-NetNatStaticMapping -ExternalIPAddress "0.0.0.0/24" -ExternalPort 30002 -Pro
 # Get token to access dashboard
 
 ```powershell
-kubectl -n kubernetes-dashboard describe secret ((kubectl -n kubernetes-dashboard get secret | Select-String admin-user ) -split" ")[0]
+$account = ((kubectl -n kubernetes-dashboard get secret -o json | ConvertFrom-Json).items.metadata | where {
+ $_.annotations.'kubernetes.io/service-account.name' -eq "admin-user" }).name
+kubectl -n kubernetes-dashboard describe secret $account
 ```

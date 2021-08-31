@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apple-app
+  labels:
+    app: fruit
+    name: apple
+spec:
+  selector:
+    matchLabels:
+      app: fruit
+      name: apple
+  template:
+    metadata:
+      labels:
+        app: fruit
+        name: apple
+    spec:
+      containers:
+        - name: apple-app
+          image: hashicorp/http-echo
+          args:
+            - "-text=apple"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5678
+
