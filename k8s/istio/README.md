@@ -1,4 +1,4 @@
-# Download isito
+# Download istio
 ```powershell
 Invoke-WebRequest -Uri 'https://github.com/istio/istio/releases/download/1.11.1/istio-1.11.1-win.zip' -OutFile 'C:\istio.zip'
 Expand-Archive -LiteralPath 'C:\istio.zip' -DestinationPath C:\
@@ -48,15 +48,19 @@ Add-NetNatStaticMapping -ExternalIPAddress "0.0.0.0/24" -ExternalPort 80 -Protoc
 # Enable Firewall
 
 ```powershell
-New-NetFirewallRule -DisplayName "Allow HTTP and HTTPs over Nginx" -Group "NGINX Reverse Proxy" -Direction Inbound -Action Allow -EdgeTraversalPolicy Allow -Protocol TCP -LocalPort 80,443 -Program "C:\nginx\nginx.exe"
+net stop nginx
 Remove-NetFirewallRule -DisplayName "Allow HTTP and HTTPs over Nginx"
 ```
 
 # Traffic Splitting Example
 
 ```powershell
-kubectl create namespace example
-kubectl label namespace example istio-injection=enabled --overwrite
+Add-NetNatStaticMapping -ExternalIPAddress "0.0.0.0/24" -ExternalPort 80 -Protocol TCP -InternalIPAddress "10.10.0.200" -InternalPort 80 -NatName KubeNatNet
+```
+
+```powershell
+kubectl delete namespace example
+kubectl label namespace example istio-injection=enabled
 kubectl -n example apply -f https://raw.githubusercontent.com/nvtienanh/hyperv-k8s/main/k8s/istio/example/apple.yaml
 kubectl -n example apply -f https://raw.githubusercontent.com/nvtienanh/hyperv-k8s/main/k8s/istio/example/banana.yaml
 kubectl -n example apply -f https://raw.githubusercontent.com/nvtienanh/hyperv-k8s/main/k8s/istio/example/istio.yaml
