@@ -1,3 +1,7 @@
+# Architecture overview
+
+![alt text](Hyper-V-K8s-nginx-with-nginx-reverser-proxy.png "architecture overview")
+
 # Download Nginx for Windows
 
 This is my pre-compile with modules: `--with-stream_ssl_module` and `--with-stream_ssl_preread_module`

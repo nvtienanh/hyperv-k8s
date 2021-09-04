@@ -25,5 +25,9 @@ PowerShell script to deploy Kubernetes cluster on Microsoft Hyper-V Server
 - `Remove-K8sVM`: Stop VMs and delete the VM files
 - `Remove-Network`: Delete the network
 
+# How to use it
+
+- [Microsoft Hyper-V Server: Deploy a Kubernetes cluster](https://www.youtube.com/watch?v=MPjavnlRnQU)
+
 # Refereces
 - https://github.com/youurayy/hyperctl
