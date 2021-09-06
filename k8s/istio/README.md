@@ -59,7 +59,7 @@ Add-NetNatStaticMapping -ExternalIPAddress "0.0.0.0/24" -ExternalPort 80 -Protoc
 ```
 
 ```powershell
-kubectl delete namespace example
+kubectl create namespace example
 kubectl label namespace example istio-injection=enabled
 kubectl -n example apply -f https://raw.githubusercontent.com/nvtienanh/hyperv-k8s/main/k8s/istio/example/apple.yaml
 kubectl -n example apply -f https://raw.githubusercontent.com/nvtienanh/hyperv-k8s/main/k8s/istio/example/banana.yaml

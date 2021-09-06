@@ -74,3 +74,7 @@ Register-ScheduledJob -Trigger $trigger -FilePath C:\nginx\startup.ps1 -Name Sta
 ```powershell
 New-NetFirewallRule -DisplayName "Allow HTTP and HTTPs over Nginx" -Group "NGINX Reverse Proxy" -Direction Inbound -Action Allow -EdgeTraversalPolicy Allow -Protocol TCP -LocalPort 80,443 -Program "C:\nginx\nginx.exe"
 ```
+
+# Video demo
+
+- [Deploy Kubernetes Nginx Ingress + MetalLB load-balancer](https://www.youtube.com/watch?v=LbLaCVaX73E)
