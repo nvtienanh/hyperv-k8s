@@ -3,6 +3,8 @@ PowerShell script to deploy Kubernetes cluster on Microsoft Hyper-V Server
 
 # Commands
 
+You have to Start Powershell as administartor and run command `set-executionpolicy remotesigned`. It make all scripts and configuration files downloaded from the Internet are signed by a trusted publisher.
+
 - `Install-Tools`: Install packages kubectl, docker, qemu-img
 - `Show-Config`: show script config vars
 - `Deploy-Network`: install private or public host network
