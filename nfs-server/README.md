@@ -9,8 +9,6 @@
 ```powershell
 .\hyperv-nfs.ps1 Get-Image
 .\hyperv-nfs.ps1 Save-ISONFS1
-
-Add-NetNatStaticMapping -ExternalIPAddress "0.0.0.0/24" -ExternalPort 2222 -Protocol TCP -InternalIPAddress "10.10.0.101" -InternalPort 22 -NatName KubeNatNet
 ```
 
 # On Windows Admin Center
