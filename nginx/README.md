@@ -51,7 +51,7 @@ Create file `nginx-service.xml` in `C:\nginx`
 ```powershell
 cd C:\nginx
 .\nginx-service.exe install
-net start nginx
+net start nginx 2>&1 | % { $_.ToString() }
 ```
 
 ## Auto start nginx when window startup
@@ -59,7 +59,7 @@ net start nginx
 Create file `C:\nginx\startup.ps1`
 
 ```powershell
-net start nginx
+net start nginx 2>&1 | % { $_.ToString() }
 ```
 
 Add Scheduled Job
