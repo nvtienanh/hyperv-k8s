@@ -1,0 +1,22 @@
+---
+# Source: nfs-subdir-external-provisioner/templates/persistentvolume.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-nfs-subdir-external-provisioner
+  labels:
+    app: nfs-subdir-external-provisioner
+    nfs-subdir-external-provisioner: nfs-subdir-external-provisioner
+spec:
+  capacity:
+    storage: 10Mi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: ""
+  mountOptions:
+    - nfsvers=3
+  nfs:
+    server: 10.10.0.1
+    path: /c

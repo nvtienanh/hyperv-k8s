@@ -1,0 +1,19 @@
+---
+# Source: nfs-subdir-external-provisioner/templates/persistentvolumeclaim.yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-nfs-subdir-external-provisioner
+  labels:
+    app: nfs-subdir-external-provisioner
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: ""
+  selector:
+    matchLabels:
+      nfs-subdir-external-provisioner: nfs-subdir-external-provisioner
+  resources:
+    requests:
+      storage: 10Mi
